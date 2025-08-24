@@ -157,5 +157,4 @@ python multi_user_service.py
 MIT License - Open source collaboration welcome.
 
 ---
-
 **ActionInbox: Where AI meets email productivity. Designed for the future of work.** 🚀
