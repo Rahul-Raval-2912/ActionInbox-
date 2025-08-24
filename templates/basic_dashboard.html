@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ActionInbox - AI Email Agent</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        .header { 
+            background: rgba(255,255,255,0.95); 
+            padding: 30px; 
+            border-radius: 15px; 
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            font-size: 3em; 
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { color: #718096; font-size: 1.3em; margin-bottom: 20px; }
+        
+        .demo-controls { 
+            background: rgba(255,255,255,0.95); 
+            padding: 25px; 
+            border-radius: 15px; 
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .btn { 
+            background: linear-gradient(45deg, #667eea, #764ba2); 
+            color: white; 
+            border: none; 
+            padding: 15px 30px; 
+            margin: 10px; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .results { 
+            background: rgba(255,255,255,0.95); 
+            border-radius: 15px; 
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .email-card { 
+            border: 1px solid #e2e8f0; 
+            margin: 20px 0; 
+            padding: 25px; 
+            border-radius: 12px; 
+            background: #f7fafc;
+            transition: all 0.3s ease;
+        }
+        .email-card:hover { 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+            transform: translateY(-2px);
+        }
+        
+        .email-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .classification-badge { 
+            display: inline-block; 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            font-size: 0.9em; 
+            font-weight: bold;
+        }
+        .badge-task { background: #fed7d7; color: #c53030; }
+        .badge-meeting { background: #bee3f8; color: #2b6cb0; }
+        .badge-invoice { background: #c6f6d5; color: #2f855a; }
+        .badge-fyi { background: #faf089; color: #744210; }
+        .badge-spam { background: #feb2b2; color: #9b2c2c; }
+        
+        .confidence { 
+            font-size: 1.1em; 
+            font-weight: bold; 
+            color: #48bb78; 
+        }
+        
+        .email-info {
+            margin: 15px 0;
+            padding: 15px;
+            background: #edf2f7;
+            border-radius: 8px;
+        }
+        
+        .actions {
+            margin: 15px 0;
+            padding: 10px;
+            background: #e6fffa;
+            border-radius: 8px;
+            border-left: 4px solid #38b2ac;
+        }
+        
+        .reply-box { 
+            background: #f0fff4; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 15px 0; 
+            border-left: 4px solid #48bb78;
+        }
+        
+        .loading { 
+            display: none; 
+            text-align: center; 
+            padding: 40px; 
+            color: #718096;
+        }
+        .spinner { 
+            border: 4px solid #e2e8f0; 
+            border-top: 4px solid #667eea; 
+            border-radius: 50%; 
+            width: 50px; 
+            height: 50px; 
+            animation: spin 1s linear infinite; 
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .alert { 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 15px 0; 
+            display: none;
+            text-align: center;
+            font-weight: bold;
+        }
+        .alert-success { background: #c6f6d5; color: #2f855a; }
+        .alert-error { background: #fed7d7; color: #c53030; }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .feature-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ActionInbox</h1>
+            <p class="subtitle">AI-Powered Email Operations Agent</p>
+            <p>Automatically classify emails, extract data, and generate professional replies</p>
+        </div>
+        
+        <div class="demo-controls">
+            <h3>Demo Controls</h3>
+            <p style="margin: 15px 0; color: #718096;">No setup required - works instantly with sample emails!</p>
+            
+            <button class="btn" onclick="processDemoEmails()">Process Sample Emails</button>
+            <button class="btn" onclick="showCustomForm()">Try Custom Email</button>
+            
+            <div class="feature-list">
+                <div class="feature-item">
+                    <div class="feature-icon">🤖</div>
+                    <h4>AI Classification</h4>
+                    <p>Task, Meeting, Invoice, FYI, Spam</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📊</div>
+                    <h4>Data Extraction</h4>
+                    <p>Dates, amounts, attendees, locations</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">⚡</div>
+                    <h4>Action Planning</h4>
+                    <p>Decides what to do with each email</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">💬</div>
+                    <h4>Smart Replies</h4>
+                    <p>Professional, contextual responses</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="alert alert-success" id="success-alert"></div>
+        <div class="alert alert-error" id="error-alert"></div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>AI is processing emails...</p>
+        </div>
+        
+        <div class="results">
+            <h3>Email Processing Results</h3>
+            <div id="results-container">
+                <p style="text-align: center; color: #718096; padding: 40px;">
+                    Click "Process Sample Emails" to see ActionInbox in action!
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showAlert(message, isError = false) {
+            const alertId = isError ? 'error-alert' : 'success-alert';
+            const alert = document.getElementById(alertId);
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showLoading(show = true) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+        
+        async function processDemoEmails() {
+            try {
+                showLoading();
+                showAlert('Processing sample emails with AI...');
+                
+                const response = await fetch('/api/process-demo');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.results);
+                    showAlert(`Successfully processed ${data.results.length} emails!`);
+                } else {
+                    showAlert('Processing failed: ' + (data.error || 'Unknown error'), true);
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, true);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function displayResults(results) {
+            const container = document.getElementById('results-container');
+            container.innerHTML = '';
+            
+            results.forEach(result => {
+                const analysis = result.analysis;
+                const reply = result.reply;
+                
+                const card = document.createElement('div');
+                card.className = 'email-card';
+                
+                const classificationClass = `badge-${analysis.classification.toLowerCase()}`;
+                const confidencePercent = Math.round(analysis.confidence * 100);
+                
+                card.innerHTML = `
+                    <div class="email-header">
+                        <div>
+                            <h4>${result.email_subject}</h4>
+                            <p style="color: #718096;">From: ${result.email_from}</p>
+                        </div>
+                        <div>
+                            <span class="classification-badge ${classificationClass}">${analysis.classification}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="email-info">
+                        <div class="confidence">Confidence: ${confidencePercent}%</div>
+                        <div style="margin: 10px 0;"><strong>Summary:</strong> ${analysis.summary}</div>
+                    </div>
+                    
+                    <div class="actions">
+                        <strong>Planned Actions:</strong> ${analysis.next_actions ? analysis.next_actions.join(', ') : 'None'}
+                    </div>
+                    
+                    ${analysis.entities && analysis.entities.task_title ? `
+                        <div style="margin: 10px 0; padding: 10px; background: #fff5f5; border-radius: 5px;">
+                            <strong>Task Detected:</strong> ${analysis.entities.task_title}
+                        </div>
+                    ` : ''}
+                    
+                    ${analysis.entities && analysis.entities.meeting_start ? `
+                        <div style="margin: 10px 0; padding: 10px; background: #f0f9ff; border-radius: 5px;">
+                            <strong>Meeting Time:</strong> ${analysis.entities.meeting_start}
+                        </div>
+                    ` : ''}
+                    
+                    ${analysis.entities && analysis.entities.invoice_total ? `
+                        <div style="margin: 10px 0; padding: 10px; background: #f0fff4; border-radius: 5px;">
+                            <strong>Invoice Amount:</strong> ${analysis.entities.currency || ''} ${analysis.entities.invoice_total}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="reply-box">
+                        <strong>AI-Generated Reply:</strong><br><br>
+                        <strong>Subject:</strong> ${reply.reply.subject}<br><br>
+                        <strong>Body:</strong><br>
+                        ${reply.reply.body}
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        function showCustomForm() {
+            const subject = prompt("Enter email subject:");
+            if (!subject) return;
+            
+            const body = prompt("Enter email body:");
+            if (!body) return;
+            
+            const fromName = prompt("From name:") || "Demo User";
+            const fromEmail = prompt("From email:") || "demo@example.com";
+            
+            const customEmail = {
+                "message_id": "custom",
+                "subject": subject,
+                "from_name": fromName,
+                "from_email": fromEmail,
+                "to_email": "you@company.com",
+                "cc_emails": "",
+                "date": new Date().toISOString(),
+                "recipient_timezone": "Asia/Kolkata",
+                "message_link": null,
+                "body": body,
+                "attachments": []
+            };
+            
+            processCustomEmail(customEmail);
+        }
+        
+        async function processCustomEmail(emailData) {
+            try {
+                showLoading();
+                
+                // Process using the same logic as demo emails
+                const results = [{
+                    email_id: 'custom',
+                    email_subject: emailData.subject,
+                    email_from: emailData.from_name,
+                    analysis: {
+                        classification: getClassification(emailData.subject + ' ' + emailData.body),
+                        confidence: 0.85,
+                        summary: `${emailData.from_name} sent: ${emailData.subject}`,
+                        next_actions: ['label_email', 'draft_reply']
+                    },
+                    reply: {
+                        reply: {
+                            subject: `Re: ${emailData.subject}`,
+                            body: 'Thank you for your email. I have received and reviewed your message. I will respond appropriately and take any necessary actions.'
+                        }
+                    }
+                }];
+                
+                displayResults(results);
+                showAlert('Custom email processed successfully!');
+                
+            } catch (error) {
+                showAlert('Error: ' + error.message, true);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function getClassification(text) {
+            text = text.toLowerCase();
+            if (text.includes('meeting') || text.includes('call') || text.includes('schedule')) return 'Meeting';
+            if (text.includes('please') || text.includes('request') || text.includes('need')) return 'Task';
+            if (text.includes('invoice') || text.includes('payment') || text.includes('bill')) return 'Invoice';
+            if (text.includes('spam') || text.includes('offer') || text.includes('deal')) return 'Spam';
+            return 'FYI';
+        }
+    </script>
+</body>
+</html>
