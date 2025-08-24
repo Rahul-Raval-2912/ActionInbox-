@@ -64,7 +64,9 @@ class UserEmailService:
             all_data[str(self.discord_user_id)] = list(self.processed_emails)
             
             with open(processed_emails_file, 'w') as f:
-                json.dump(all_data, f)
+                json.dump(all_data, f, indent=2)
+            
+            print(f"Saved {len(self.processed_emails)} processed emails for user {self.discord_user_id}")
         except Exception as e:
             print(f"Error saving processed emails: {e}")
     
@@ -74,6 +76,13 @@ class UserEmailService:
             # Use user-specific token file
             user_token_file = f'token_{self.discord_user_id}.json'
             
+            # Temporarily rename token files for this user
+            if os.path.exists('token.json'):
+                os.rename('token.json', f'token_backup_{self.discord_user_id}.json')
+            
+            if os.path.exists(user_token_file):
+                os.rename(user_token_file, 'token.json')
+            
             if not self.gmail_connector.authenticate():
                 return False, "Gmail authentication failed"
             
@@ -81,10 +90,19 @@ class UserEmailService:
             profile = self.gmail_connector.service.users().getProfile(userId='me').execute()
             self.user_email = profile.get('emailAddress', 'Unknown')
             
-            # Authenticate calendar
-            creds = None
+            # Save user-specific token
             if os.path.exists('token.json'):
-                creds = Credentials.from_authorized_user_file('token.json')
+                os.rename('token.json', user_token_file)
+            
+            # Restore backup if exists
+            backup_file = f'token_backup_{self.discord_user_id}.json'
+            if os.path.exists(backup_file):
+                os.rename(backup_file, 'token.json')
+            
+            # Authenticate calendar with user token
+            creds = None
+            if os.path.exists(user_token_file):
+                creds = Credentials.from_authorized_user_file(user_token_file)
             
             if creds and creds.valid:
                 self.calendar_service = build('calendar', 'v3', credentials=creds)
@@ -97,6 +115,7 @@ class UserEmailService:
     def get_new_emails(self, max_results=10):
         """Get unprocessed emails"""
         try:
+            # Get unread emails
             results = self.gmail_connector.service.users().messages().list(
                 userId='me',
                 q='is:unread',
@@ -104,25 +123,49 @@ class UserEmailService:
             ).execute()
             
             messages = results.get('messages', [])
+            
+            if not messages:
+                return []
+            
             new_emails = []
+            emails_to_add = []
+            
+            print(f"Found {len(messages)} unread emails, checking against {len(self.processed_emails)} processed")
             
             for message in messages:
                 message_id = message['id']
                 
+                # Skip if already processed
                 if message_id in self.processed_emails:
+                    print(f"Skipping already processed email: {message_id}")
                     continue
                 
+                # Get email data
                 email_data = self.gmail_connector._get_email_data(message_id)
                 
-                if email_data:
-                    # Only process recent emails (last 24 hours)
-                    email_date = self.parse_email_date(email_data.date)
-                    if email_date and email_date > (datetime.now() - timedelta(hours=24)):
-                        new_emails.append(email_data)
-                        self.processed_emails.add(message_id)
+                if not email_data:
+                    continue
+                
+                # Check if email is recent (last 24 hours)
+                email_date = self.parse_email_date(email_data.date)
+                if not email_date or email_date <= (datetime.now() - timedelta(hours=24)):
+                    print(f"Skipping old email: {email_data.subject}")
+                    # Still mark as processed to avoid checking again
+                    emails_to_add.append(message_id)
+                    continue
+                
+                print(f"New email found: {email_data.subject} from {email_data.from_name}")
+                new_emails.append(email_data)
+                emails_to_add.append(message_id)
             
-            if new_emails:
+            # Add all checked emails to processed list
+            for email_id in emails_to_add:
+                self.processed_emails.add(email_id)
+            
+            # Save processed emails if we added any
+            if emails_to_add:
                 self.save_processed_emails()
+                print(f"Added {len(emails_to_add)} emails to processed list")
             
             return new_emails
             
@@ -352,7 +395,12 @@ async def change_account(ctx):
     if user_id in user_services:
         user_services[user_id].monitoring_active = False
     
-    # Remove old token
+    # Remove user-specific token
+    user_token_file = f'token_{user_id}.json'
+    if os.path.exists(user_token_file):
+        os.remove(user_token_file)
+    
+    # Remove general token if exists
     if os.path.exists('token.json'):
         os.remove('token.json')
     
@@ -431,9 +479,13 @@ async def monitor_user_emails():
             continue
         
         try:
-            new_emails = service.get_new_emails(max_results=3)
+            print(f"Checking emails for user {user_id} ({service.user_email})...")
+            
+            new_emails = service.get_new_emails(max_results=5)
             
             if new_emails:
+                print(f"Found {len(new_emails)} new emails for user {user_id}")
+                
                 # Get Discord channel to send notifications
                 channel_id = int(os.getenv('DISCORD_CHANNEL_ID'))
                 channel = bot.get_channel(channel_id)
@@ -464,6 +516,8 @@ async def monitor_user_emails():
                         embed.set_footer(text="ActionInbox Auto-Monitor")
                         
                         await channel.send(embed=embed)
+            else:
+                print(f"No new emails for user {user_id}")
         
         except Exception as e:
             print(f"Monitoring error for user {user_id}: {e}")
