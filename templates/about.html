@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h1 class="text-center mb-5">How to Use ActionInbox</h1>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-credit-card me-2"></i>Step 1: Payment & Access</h5>
+                </div>
+                <div class="card-body">
+                    <p>Pay ₹100 to get access to our Discord server where the ActionInbox bot is running.</p>
+                    <a href="{{ url_for('payment') }}" class="btn btn-primary">Pay Now - ₹100</a>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-cog me-2"></i>Step 2: Google Cloud Setup</h5>
+                </div>
+                <div class="card-body">
+                    <p>Create your own Google Cloud project (FREE) to enable Gmail and Calendar APIs:</p>
+                    <div id="setup-bot" class="border p-3 rounded bg-light">
+                        <h6>🤖 Setup Assistant</h6>
+                        <input type="text" id="project-name" class="form-control mb-2" placeholder="Enter project name (e.g., ActionInbox-YourName)">
+                        <button onclick="generateSetup()" class="btn btn-sm btn-success">Generate Setup Guide</button>
+                        <div id="setup-result" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fab fa-discord me-2"></i>Step 3: Discord Commands</h5>
+                </div>
+                <div class="card-body">
+                    <p>Once in our Discord server, use these commands:</p>
+                    <ul>
+                        <li><code>!setup</code> - Connect your Gmail account</li>
+                        <li><code>!start</code> - Start email monitoring</li>
+                        <li><code>!check</code> - Check emails now</li>
+                        <li><code>!status</code> - Check service status</li>
+                        <li><code>!stop</code> - Stop monitoring</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-magic me-2"></i>Step 4: Enjoy Automation</h5>
+                </div>
+                <div class="card-body">
+                    <p>ActionInbox will now:</p>
+                    <ul>
+                        <li>Monitor your Gmail every 60 seconds</li>
+                        <li>Classify emails with 95%+ accuracy</li>
+                        <li>Create calendar events for meetings</li>
+                        <li>Send notifications to Discord</li>
+                        <li>Generate smart replies</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <h3>Ready to Transform Your Email Workflow?</h3>
+                <a href="{{ url_for('payment') }}" class="btn btn-primary btn-lg">Get Started - ₹100</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateSetup() {
+    const projectName = document.getElementById('project-name').value || 'ActionInbox';
+    const resultDiv = document.getElementById('setup-result');
+    
+    fetch('/api/create-project', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({project_name: projectName})
+    })
+    .then(response => response.json())
+    .then(data => {
+        resultDiv.innerHTML = `
+            <div class="alert alert-success">
+                <h6>📋 Your Setup Guide:</h6>
+                <p><strong>Project ID:</strong> ${data.project_id}</p>
+                <ol>
+                    ${data.steps.map(step => `<li>${step}</li>`).join('')}
+                </ol>
+                <p><strong>🔗 Quick Links:</strong></p>
+                <a href="https://console.cloud.google.com/" target="_blank" class="btn btn-sm btn-outline-primary me-2">Google Cloud Console</a>
+                <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" class="btn btn-sm btn-outline-success me-2">Enable Gmail API</a>
+                <a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" target="_blank" class="btn btn-sm btn-outline-info">Enable Calendar API</a>
+            </div>
+        `;
+    });
+}
+</script>
+{% endblock %}

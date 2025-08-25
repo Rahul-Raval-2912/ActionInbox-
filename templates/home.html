@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section text-center">
+    <div class="container">
+        <h1 class="display-4 mb-4">🚀 ActionInbox</h1>
+        <p class="lead mb-4">AI-Powered Email Automation Platform</p>
+        <p class="mb-4">Transform your email workflow with intelligent classification, calendar automation, and Discord bot control.</p>
+        <a href="{{ url_for('about') }}" class="btn btn-light btn-lg me-3">Learn More</a>
+        <a href="{{ url_for('payment') }}" class="btn btn-outline-light btn-lg">Get Started - ₹100</a>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row text-center mb-5">
+        <div class="col-md-4 mb-4">
+            <div class="card feature-card h-100">
+                <div class="card-body">
+                    <i class="fas fa-brain fa-3x text-primary mb-3"></i>
+                    <h5>AI Email Classification</h5>
+                    <p>95%+ accuracy in classifying emails as Tasks, Meetings, Invoices, or Spam</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card feature-card h-100">
+                <div class="card-body">
+                    <i class="fas fa-calendar fa-3x text-success mb-3"></i>
+                    <h5>Auto Calendar Events</h5>
+                    <p>Automatically creates Google Calendar events from meeting emails</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card feature-card h-100">
+                <div class="card-body">
+                    <i class="fab fa-discord fa-3x text-info mb-3"></i>
+                    <h5>Discord Bot Control</h5>
+                    <p>Manage your email automation through Discord commands</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <h3>Why ActionInbox?</h3>
+            <ul class="list-unstyled">
+                <li><i class="fas fa-check text-success me-2"></i> Save 2+ hours daily</li>
+                <li><i class="fas fa-check text-success me-2"></i> Never miss important meetings</li>
+                <li><i class="fas fa-check text-success me-2"></i> Automatic task organization</li>
+                <li><i class="fas fa-check text-success me-2"></i> Team collaboration via Discord</li>
+                <li><i class="fas fa-check text-success me-2"></i> Enterprise-grade security</li>
+            </ul>
+        </div>
+        <div class="col-lg-6">
+            <h3>Demo Results</h3>
+            <div class="bg-light p-3 rounded">
+                <p><strong>📧 "Team meeting tomorrow at 2 PM"</strong></p>
+                <p class="text-success">→ Meeting (95% confidence)</p>
+                <p class="text-success">→ ✅ Calendar event created</p>
+                <hr>
+                <p><strong>📧 "Invoice #123 - Payment due $2,500"</strong></p>
+                <p class="text-success">→ Invoice (98% confidence)</p>
+                <p class="text-success">→ ✅ Amount extracted: $2,500</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

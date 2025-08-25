@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4><i class="fas fa-credit-card me-2"></i>ActionInbox Access</h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <h2 class="text-primary">₹100</h2>
+                        <p class="text-muted">One-time payment for Discord server access</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>What you get:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>Discord server invite link</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Access to ActionInbox bot</li>
+                            <li><i class="fas fa-check text-success me-2"></i>24/7 email monitoring</li>
+                            <li><i class="fas fa-check text-success me-2"></i>AI email classification</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Calendar automation</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Setup support</li>
+                        </ul>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('process_payment') }}">
+                        <div class="mb-3">
+                            <label class="form-label">Payment Method</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" value="upi" checked>
+                                <label class="form-check-label">
+                                    <i class="fas fa-mobile-alt me-2"></i>UPI Payment
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" value="card">
+                                <label class="form-check-label">
+                                    <i class="fas fa-credit-card me-2"></i>Credit/Debit Card
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="text" class="form-control" name="amount" value="100" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email (for Discord invite)</label>
+                            <input type="email" class="form-control" name="email" required placeholder="your@email.com">
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-lock me-2"></i>Pay ₹100 Securely
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            Secure payment processing. Your data is protected.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6><i class="fas fa-question-circle me-2"></i>Why do I need to pay?</h6>
+                    <p class="small text-muted">
+                        ActionInbox runs on our Discord server with dedicated resources for email monitoring, 
+                        AI processing, and calendar automation. The ₹100 fee covers server costs and ensures 
+                        quality service for all users.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

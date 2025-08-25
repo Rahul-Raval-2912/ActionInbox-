@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h1 class="text-center mb-5">🤖 Google Cloud Setup Assistant</h1>
+            
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-robot me-2"></i>Automated Setup Bot</h5>
+                </div>
+                <div class="card-body">
+                    <p>This bot will help you create the Google Cloud project needed for ActionInbox.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Project Name</label>
+                        <input type="text" id="project-name" class="form-control" placeholder="ActionInbox-YourName" value="ActionInbox-User">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Your Email</label>
+                        <input type="email" id="user-email" class="form-control" placeholder="your@email.com">
+                    </div>
+                    
+                    <button onclick="generateFullGuide()" class="btn btn-primary">
+                        <i class="fas fa-magic me-2"></i>Generate Complete Setup Guide
+                    </button>
+                    
+                    <div id="setup-output" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateFullGuide() {
+    const projectName = document.getElementById('project-name').value;
+    const userEmail = document.getElementById('user-email').value;
+    const timestamp = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const projectId = `actioninbox-${timestamp}-${Math.floor(Math.random()*1000)}`;
+    
+    const output = document.getElementById('setup-output');
+    
+    output.innerHTML = `
+        <div class="alert alert-success">
+            <h5><i class="fas fa-clipboard-list me-2"></i>Your Complete Setup Guide</h5>
+            
+            <div class="mb-3">
+                <strong>Project Details:</strong><br>
+                Name: ${projectName}<br>
+                ID: ${projectId}<br>
+                Email: ${userEmail}
+            </div>
+            
+            <div class="accordion" id="setupAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#step1">
+                            Step 1: Create Google Cloud Project
+                        </button>
+                    </h2>
+                    <div id="step1" class="accordion-collapse collapse show">
+                        <div class="accordion-body">
+                            <ol>
+                                <li>Go to <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+                                <li>Click "Select a project" → "New Project"</li>
+                                <li>Project name: <code>${projectName}</code></li>
+                                <li>Project ID: <code>${projectId}</code></li>
+                                <li>Click "Create"</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#step2">
+                            Step 2: Enable APIs
+                        </button>
+                    </h2>
+                    <div id="step2" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <p>Enable these APIs in your project:</p>
+                            <div class="d-grid gap-2">
+                                <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" class="btn btn-outline-primary">
+                                    <i class="fas fa-envelope me-2"></i>Enable Gmail API
+                                </a>
+                                <a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" target="_blank" class="btn btn-outline-success">
+                                    <i class="fas fa-calendar me-2"></i>Enable Calendar API
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#step3">
+                            Step 3: Create OAuth Credentials
+                        </button>
+                    </h2>
+                    <div id="step3" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <ol>
+                                <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Credentials page</a></li>
+                                <li>Click "Create Credentials" → "OAuth client ID"</li>
+                                <li>Application type: "Desktop application"</li>
+                                <li>Name: "ActionInbox Client"</li>
+                                <li>Click "Create"</li>
+                                <li>Download the JSON file as <code>credentials.json</code></li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#step4">
+                            Step 4: Join Discord & Setup
+                        </button>
+                    </h2>
+                    <div id="step4" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <ol>
+                                <li>Join our Discord server (after payment)</li>
+                                <li>Upload your <code>credentials.json</code> file</li>
+                                <li>Use <code>!setup</code> command</li>
+                                <li>Follow bot instructions</li>
+                                <li>Start monitoring with <code>!start</code></li>
+                            </ol>
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Need help?</strong> Our support team is available in Discord to assist with setup.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <button onclick="downloadGuide()" class="btn btn-success me-2">
+                    <i class="fas fa-download me-2"></i>Download Guide
+                </button>
+                <button onclick="emailGuide()" class="btn btn-outline-primary">
+                    <i class="fas fa-envelope me-2"></i>Email Guide
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function downloadGuide() {
+    const projectName = document.getElementById('project-name').value;
+    const userEmail = document.getElementById('user-email').value;
+    const timestamp = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const projectId = `actioninbox-${timestamp}-${Math.floor(Math.random()*1000)}`;
+    
+    const content = `ActionInbox Setup Guide
+Generated: ${new Date().toLocaleDateString()}
+
+Project Details:
+- Name: ${projectName}
+- ID: ${projectId}
+- Email: ${userEmail}
+
+Step 1: Create Google Cloud Project
+1. Go to https://console.cloud.google.com/
+2. Click "Select a project" → "New Project"
+3. Project name: ${projectName}
+4. Project ID: ${projectId}
+5. Click "Create"
+
+Step 2: Enable APIs
+1. Enable Gmail API: https://console.cloud.google.com/apis/library/gmail.googleapis.com
+2. Enable Calendar API: https://console.cloud.google.com/apis/library/calendar-json.googleapis.com
+
+Step 3: Create OAuth Credentials
+1. Go to https://console.cloud.google.com/apis/credentials
+2. Click "Create Credentials" → "OAuth client ID"
+3. Application type: "Desktop application"
+4. Name: "ActionInbox Client"
+5. Click "Create"
+6. Download the JSON file as credentials.json
+
+Step 4: Join Discord & Setup
+1. Join our Discord server (after payment)
+2. Upload your credentials.json file
+3. Use !setup command
+4. Follow bot instructions
+5. Start monitoring with !start
+
+Support: Available in Discord server
+`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `actioninbox-setup-${projectId}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function emailGuide() {
+    alert('Email functionality will be available after payment. The guide will be sent to your registered email.');
+}
+</script>
+{% endblock %}

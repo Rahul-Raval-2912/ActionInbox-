@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h2 class="text-success mb-3">Payment Successful!</h2>
+                    <p class="lead">Welcome to ActionInbox! 🎉</p>
+                    
+                    <div class="alert alert-success">
+                        <h5><i class="fab fa-discord me-2"></i>Your Discord Invite Link:</h5>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" value="{{ discord_invite }}" readonly id="discord-link">
+                            <button class="btn btn-primary" onclick="copyLink()">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                        <a href="{{ discord_invite }}" target="_blank" class="btn btn-discord" style="background: #5865F2; color: white;">
+                            <i class="fab fa-discord me-2"></i>Join Discord Server
+                        </a>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6>What's Next?</h6>
+                        <ol class="text-start">
+                            <li>Click the Discord link above to join our server</li>
+                            <li>Use the <code>!setup</code> command to connect your Gmail</li>
+                            <li>Follow the setup guide for Google Cloud project</li>
+                            <li>Start monitoring with <code>!start</code> command</li>
+                        </ol>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{{ url_for('profile') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-user me-2"></i>View Profile
+                        </a>
+                        <a href="{{ url_for('about') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-book me-2"></i>Setup Guide
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyLink() {
+    const linkInput = document.getElementById('discord-link');
+    linkInput.select();
+    document.execCommand('copy');
+    
+    const button = event.target;
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    button.classList.add('btn-success');
+    button.classList.remove('btn-primary');
+    
+    setTimeout(() => {
+        button.innerHTML = originalHTML;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-primary');
+    }, 2000);
+}
+</script>
+{% endblock %}
