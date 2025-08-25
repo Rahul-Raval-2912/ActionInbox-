@@ -1,0 +1,37 @@
+{
+  "name": "ActionInbox - AI Email Automation",
+  "description": "AI-powered email automation platform with Discord bot control",
+  "repository": "https://github.com/your-username/actioninbox",
+  "logo": "https://cdn-icons-png.flaticon.com/512/732/732200.png",
+  "keywords": ["ai", "email", "automation", "discord", "calendar"],
+  "env": {
+    "DISCORD_BOT_TOKEN": {
+      "description": "Discord bot token from Discord Developer Portal",
+      "required": true
+    },
+    "NOTION_API_KEY": {
+      "description": "Notion API key for task management (optional)",
+      "required": false
+    },
+    "FLASK_SECRET_KEY": {
+      "description": "Secret key for Flask sessions",
+      "generator": "secret"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    },
+    "worker": {
+      "quantity": 1,
+      "size": "free"
+    }
+  },
+  "addons": [],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}
