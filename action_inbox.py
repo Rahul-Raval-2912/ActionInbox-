@@ -64,31 +64,102 @@ class ActionInbox:
         return analysis, reply
 
     def _classify_email(self, email_data: EmailData) -> tuple[str, float]:
-        """Classify email and return confidence score"""
-        text = f"{email_data.subject} {email_data.body}".lower()
+        """Enhanced email classification with better logic"""
+        subject = email_data.subject.lower()
+        body = email_data.body.lower()
+        from_email = email_data.from_email.lower()
+        text = f"{subject} {body}"
         
-        scores = {}
-        for category, keywords in self.classification_keywords.items():
-            score = sum(1 for keyword in keywords if keyword in text)
-            scores[category] = score / len(keywords)
+        # Enhanced scoring system
+        scores = {
+            'Meeting': 0,
+            'Task': 0,
+            'Invoice': 0,
+            'Spam': 0,
+            'FYI': 0
+        }
         
-        # Special handling for spam
-        if self._has_opt_out(email_data.body) or 'unsubscribe' in text:
-            return 'Spam', 0.9
+        # Enhanced Meeting Detection
+        meeting_patterns = {
+            'high': ['meeting at', 'call at', 'zoom at', 'teams meeting', 'scheduled for'],
+            'medium': ['meeting', 'call', 'sync', 'discussion', 'appointment'],
+            'low': ['catch up', 'demo', 'presentation', 'review']
+        }
         
-        # Special boost for time patterns in meeting detection
-        if re.search(r'\d{1,2}:\d{2}|\d{1,2}\s*(am|pm)', text):
-            scores['Meeting'] += 0.3
+        time_patterns = {
+            'high': [r'\d{1,2}:\d{2}\s*(am|pm)', r'tomorrow at \d', r'today at \d'],
+            'medium': [r'\d{1,2}\s*(am|pm)', 'tomorrow', 'today', 'next week'],
+            'low': ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+        }
         
-        # Get highest scoring category
-        best_category = max(scores, key=scores.get)
-        confidence = min(scores[best_category] * 2, 1.0)  # Scale confidence
+        # Score meeting patterns
+        for weight, patterns in meeting_patterns.items():
+            multiplier = {'high': 30, 'medium': 20, 'low': 10}[weight]
+            for pattern in patterns:
+                if pattern in text:
+                    scores['Meeting'] += multiplier
         
-        # Default to FYI if low confidence
-        if confidence < 0.3:
-            return 'FYI', 0.5
-            
-        return best_category, confidence
+        # Score time patterns with regex
+        for weight, patterns in time_patterns.items():
+            multiplier = {'high': 25, 'medium': 15, 'low': 8}[weight]
+            for pattern in patterns:
+                if isinstance(pattern, str):
+                    if pattern in text:
+                        scores['Meeting'] += multiplier
+                else:  # regex pattern
+                    if re.search(pattern, text):
+                        scores['Meeting'] += multiplier
+        
+        # Enhanced Task Detection
+        task_patterns = {
+            'high': ['please review', 'need approval', 'action required', 'urgent request'],
+            'medium': ['please', 'need', 'request', 'approve', 'complete'],
+            'low': ['update', 'send', 'provide', 'finish']
+        }
+        
+        for weight, patterns in task_patterns.items():
+            multiplier = {'high': 35, 'medium': 20, 'low': 12}[weight]
+            for pattern in patterns:
+                if pattern in text:
+                    scores['Task'] += multiplier
+        
+        # Enhanced Spam Detection
+        spam_indicators = {
+            'high': ['click here to claim', 'you have won', 'congratulations winner'],
+            'medium': ['unsubscribe', 'marketing', 'promotion', 'offer'],
+            'low': ['deal', 'discount', 'free']
+        }
+        
+        for weight, indicators in spam_indicators.items():
+            multiplier = {'high': 40, 'medium': 25, 'low': 15}[weight]
+            for indicator in indicators:
+                if indicator in text:
+                    scores['Spam'] += multiplier
+        
+        # Social media spam detection
+        if any(x in from_email for x in ['linkedin', 'facebook', 'twitter']):
+            if any(x in subject for x in ['invitation', 'connection']):
+                scores['Spam'] += 35
+        
+        # Invoice Detection
+        invoice_patterns = ['invoice #', 'payment due', 'amount due', 'bill', '$']
+        for pattern in invoice_patterns:
+            if pattern in text:
+                scores['Invoice'] += 20
+        
+        # Get best classification
+        max_score = max(scores.values())
+        
+        if max_score == 0:
+            return 'FYI', 0.6
+        
+        classification = max(scores, key=scores.get)
+        
+        # Better confidence calculation
+        total_score = sum(scores.values())
+        confidence = min((max_score / max(total_score, 1)) * 0.85 + 0.15, 0.98)
+        
+        return classification, confidence
 
     def _extract_entities(self, email_data: EmailData, classification: str) -> Dict:
         """Extract structured entities based on classification"""

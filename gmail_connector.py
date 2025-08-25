@@ -9,7 +9,8 @@ import os
 from action_inbox import ActionInbox, EmailData
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 
-          'https://www.googleapis.com/auth/gmail.send']
+          'https://www.googleapis.com/auth/gmail.send',
+          'https://www.googleapis.com/auth/calendar']
 
 class GmailConnector:
     def __init__(self, credentials_file='credentials.json', token_file='token.json'):

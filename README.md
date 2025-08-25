@@ -33,13 +33,23 @@ ActionInbox is a complete AI-powered email automation platform that transforms h
 
 ## 🚀 **Quick Start**
 
+### **⚡ FIRST TIME SETUP (Required)**
+```bash
+# Interactive setup wizard (RECOMMENDED)
+python setup_wizard.py
+
+# OR quick automated setup
+python quick_setup.py
+```
+**Why?** Google OAuth requires each user to have their own project. These tools create it for you in 3 minutes (FREE).
+
 ### **Option 1: Discord Bot (Recommended)**
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
 # Start Discord bot
-python complete_discord_bot.py
+python clean_discord_bot.py
 ```
 
 **Discord Commands:**
@@ -67,12 +77,27 @@ python multi_user_service.py
 
 ## 🔧 **Setup Requirements**
 
-### **Required: Gmail API (FREE)**
+### **🚨 IMPORTANT: OAuth Setup Required**
+**Problem:** Google restricts unverified apps, causing "access denied" errors  
+**Solution:** Each user creates their own Google Cloud project (FREE)
+
+**Choose your setup method:**
+
+#### **🎯 Option A: Automated Setup (Recommended)**
+```bash
+python setup_wizard.py  # Interactive guide
+# OR
+python quick_setup.py   # Automated setup
+```
+
+#### **🛠️ Option B: Manual Setup**
 1. Go to: https://console.cloud.google.com/
-2. Create project "ActionInbox"
+2. Create project "ActionInbox-YourName"
 3. Enable Gmail API
 4. Create OAuth 2.0 credentials (Desktop app)
 5. Download as `credentials.json`
+
+**📖 Detailed Guide:** See `README_SETUP.md`
 
 ### **Optional: Discord Bot**
 1. Go to: https://discord.com/developers/applications
@@ -127,6 +152,7 @@ python multi_user_service.py
 
 ## 🎯 **Key Benefits**
 
+✅ **Universal Access**: Works for ANY user with our setup tools  
 ✅ **Real-World Problem Solver**: Addresses email overload for knowledge workers  
 ✅ **Live Processing**: Works with actual Gmail accounts  
 ✅ **Multi-User Ready**: Scales for team and organizational use  
@@ -135,6 +161,7 @@ python multi_user_service.py
 ✅ **Production Ready**: 24/7 monitoring with error handling  
 ✅ **Security Focused**: Enterprise-grade threat detection  
 ✅ **Team Collaboration**: Discord-based control for organizations  
+✅ **Privacy Compliant**: Your data stays in your own Google project  
 
 ## 📈 **Business Impact**
 
