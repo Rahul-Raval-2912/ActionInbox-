@@ -22,13 +22,23 @@ class GmailConnector:
     def authenticate(self):
         """Authenticate with Gmail API"""
         creds = None
+        need_new_auth = False
+        
         if os.path.exists(self.token_file):
             creds = Credentials.from_authorized_user_file(self.token_file, SCOPES)
+            
+            # Check if token has calendar scope
+            if creds and hasattr(creds, 'scopes'):
+                calendar_scope = 'https://www.googleapis.com/auth/calendar'
+                if calendar_scope not in creds.scopes:
+                    print("Calendar scope missing, need re-authentication")
+                    need_new_auth = True
         
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
+        if not creds or not creds.valid or need_new_auth:
+            if creds and creds.expired and creds.refresh_token and not need_new_auth:
                 creds.refresh(Request())
             else:
+                print("Starting OAuth flow with calendar permissions...")
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_file, SCOPES)
                 creds = flow.run_local_server(port=0)
             

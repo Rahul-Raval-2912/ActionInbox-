@@ -371,10 +371,9 @@ async def on_ready():
     load_processed_emails()
     print('Commands:')
     print('  !commands - Show all commands')
-    print('  !guide - Complete setup guide')
-    print('  !steps - Detailed setup steps')
-    print('  !links - Quick setup links')
+    print('  !guide - Service overview')
     print('  !setup - Setup Gmail account')
+    print('  !fix_calendar - Fix calendar permissions')
     print('  !start - Start monitoring')
     print('  !check - Check emails now')
     print('  !status - Check status')
@@ -397,23 +396,18 @@ async def setup_gmail(ctx):
                 color=0xff6b6b
             )
             embed.add_field(
-                name="🚀 Quick Solution",
-                value="Run: `python setup_wizard.py` in the ActionInbox folder\nThis will guide you through creating your own Google project (FREE)",
+                name="🚀 Solution",
+                value="Contact the server admin to add your email as an authorized user.",
                 inline=False
             )
             embed.add_field(
-                name="⚡ Super Quick",
-                value="Run: `python quick_setup.py` for automated setup",
-                inline=False
-            )
-            embed.add_field(
-                name="📋 Manual Steps",
-                value="1. Go to console.cloud.google.com\n2. Create project 'ActionInbox-YourName'\n3. Enable Gmail API\n4. Create OAuth credentials\n5. Download as credentials.json",
+                name="💬 Alternative",
+                value="Ask in this Discord server to be added to the authorized users list.",
                 inline=False
             )
             embed.add_field(
                 name="💡 Why This Happens",
-                value="Google requires app verification for public use. Creating your own project bypasses this restriction.",
+                value="Google OAuth requires user verification for security. We'll add you to the authorized list.",
                 inline=False
             )
             await ctx.send(embed=embed)
@@ -447,18 +441,13 @@ async def setup_gmail(ctx):
                 color=0xff6b6b
             )
             embed.add_field(
-                name="🚀 Quick Solution",
-                value="Run: `python setup_wizard.py` in the ActionInbox folder\nThis will guide you through creating your own Google project (FREE)",
+                name="🚀 Solution",
+                value="Contact the server admin to add your email as an authorized user.",
                 inline=False
             )
             embed.add_field(
-                name="⚡ Super Quick",
-                value="Run: `python quick_setup.py` for automated setup",
-                inline=False
-            )
-            embed.add_field(
-                name="📋 Manual Steps",
-                value="1. Go to console.cloud.google.com\n2. Create project 'ActionInbox-YourName'\n3. Enable Gmail API\n4. Create OAuth credentials\n5. Download as credentials.json",
+                name="💬 Alternative",
+                value="Ask in this Discord server to be added to the authorized users list.",
                 inline=False
             )
             await ctx.send(embed=embed)
@@ -550,13 +539,8 @@ async def check_emails_now(ctx):
                 calendar_result = create_calendar_event(email_data, analysis)
                 
                 if calendar_result and calendar_result.get('success'):
-                    embed.add_field(name="✅ Calendar Event Created", value=f"""
-**Time:** {calendar_result.get('start_time', 'Unknown')}
-**Duration:** {calendar_result.get('duration', 60)} minutes
-**Attendees:** {len(calendar_result.get('attendees', []))} people
-**Location:** {calendar_result.get('location', 'Not specified')}
-📧 Notification sent to organizer
-""", inline=False)
+                    location = str(calendar_result.get('location', 'Not specified'))[:50]
+                    embed.add_field(name="✅ Calendar Event Created", value=f"Time: {calendar_result.get('start_time', 'Unknown')[:19]}\nDuration: {calendar_result.get('duration', 60)} min", inline=False)
                     
                     if calendar_result.get('event_link'):
                         embed.add_field(name="🔗 Event Link", value=f"[Open in Calendar]({calendar_result['event_link']})", inline=False)
@@ -564,17 +548,9 @@ async def check_emails_now(ctx):
                 elif calendar_result and calendar_result.get('error'):
                     error_msg = str(calendar_result['error'])
                     if "unregistered callers" in error_msg or "API Key" in error_msg:
-                        embed.add_field(name="⚠️ Calendar Setup Needed", value=f"""
-📅 Meeting detected but Calendar API not enabled:
-**Solution:** Use `!guide` and enable Calendar API in your Google Cloud project
-**Quick Link:** [Enable Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com)
-""", inline=False)
+                        embed.add_field(name="⚠️ Calendar API Disabled", value="Calendar API not enabled. Contact admin.", inline=False)
                     else:
-                        embed.add_field(name="⚠️ Calendar Issue", value=f"""
-📅 Meeting detected but calendar event failed:
-**Error:** {error_msg}
-**Fix:** Use `!fix_calendar` for troubleshooting
-""", inline=False)
+                        embed.add_field(name="⚠️ Calendar Issue", value=f"Calendar failed: {error_msg[:200]}...", inline=False)
                 else:
                     embed.add_field(name="Type", value="📅 Meeting detected (calendar not available)", inline=True)
             
@@ -615,38 +591,54 @@ async def change_account(ctx):
 @bot.command(name='fix_calendar')
 async def fix_calendar_permissions(ctx):
     """Fix calendar permission issues"""
+    global gmail_connector, email_agent, calendar_service, user_email, monitoring_active
+    
     try:
-        embed = discord.Embed(
-            title="🔧 Fix Calendar Issues",
-            description="If you're getting calendar errors, follow these steps:",
-            color=0xffa500
-        )
+        await ctx.send("🔧 Fixing calendar permissions...")
         
-        embed.add_field(
-            name="🎯 Step 1: Enable Calendar API",
-            value="Go to your Google Cloud project and enable Calendar API\n[Direct Link](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com)",
-            inline=False
-        )
+        # Stop monitoring
+        monitoring_active = False
+        if monitor_emails.is_running():
+            monitor_emails.stop()
         
-        embed.add_field(
-            name="🔄 Step 2: Reset Authentication",
-            value="Use `!change` command to clear old permissions",
-            inline=False
-        )
+        # Remove old token to force re-authentication with calendar scope
+        if os.path.exists('token.json'):
+            os.remove('token.json')
+            await ctx.send("🗑️ Removed old authentication")
         
-        embed.add_field(
-            name="🔑 Step 3: Re-authenticate",
-            value="Use `!setup` command and grant ALL permissions when prompted",
-            inline=False
-        )
+        # Reset services
+        gmail_connector = None
+        email_agent = None
+        calendar_service = None
+        user_email = None
         
-        embed.add_field(
-            name="💡 Common Issues",
-            value="• 'Unregistered callers' = Calendar API not enabled\n• 'Insufficient permissions' = Need to re-authenticate\n• 'Invalid scope' = Calendar API not enabled in project",
-            inline=False
-        )
+        await ctx.send("✅ Calendar permissions reset. Use `!setup` to re-authenticate with calendar access.")
         
-        await ctx.send(embed=embed)
+    except Exception as e:
+        await ctx.send(f"❌ Error: {str(e)}")
+
+@bot.command(name='reset')
+async def reset_auth(ctx):
+    """Reset authentication completely"""
+    global gmail_connector, email_agent, calendar_service, user_email, monitoring_active
+    
+    try:
+        # Stop monitoring
+        monitoring_active = False
+        if monitor_emails.is_running():
+            monitor_emails.stop()
+        
+        # Remove token
+        if os.path.exists('token.json'):
+            os.remove('token.json')
+        
+        # Reset all services
+        gmail_connector = None
+        email_agent = None
+        calendar_service = None
+        user_email = None
+        
+        await ctx.send("✅ Authentication reset. Use `!setup` to start fresh.")
         
     except Exception as e:
         await ctx.send(f"❌ Error: {str(e)}")
@@ -783,28 +775,29 @@ async def setup_guide(ctx):
     )
     
     embed.add_field(
-        name="📋 Quick Steps",
-        value="""1. Go to: https://console.cloud.google.com/
-2. Create project: 'ActionInbox-YourName'
-3. Enable Gmail API + Calendar API
-4. Create OAuth credentials (Desktop app)
-5. Download as 'credentials.json'
-6. Use `!setup` command""",
+        name="📋 Server-Based Service",
+        value="""ActionInbox runs on our servers for easy access!
+
+• No Google Cloud setup needed
+• Just use `!setup` to connect your Gmail
+• We handle all the technical infrastructure
+• Your emails are processed securely""",
         inline=False
     )
     
     embed.add_field(
-        name="🔗 Direct Links",
-        value="""[Create Project](https://console.cloud.google.com/projectcreate)
-[Enable Gmail API](https://console.cloud.google.com/apis/library/gmail.googleapis.com)
-[Enable Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com)
-[Create Credentials](https://console.cloud.google.com/apis/credentials)""",
+        name="🚀 How It Works",
+        value="""1. Use `!setup` command
+2. Grant Gmail permissions when prompted
+3. Use `!start` to begin monitoring
+4. Get real-time email notifications
+5. Automatic calendar event creation""",
         inline=False
     )
     
     embed.add_field(
-        name="💡 Why This Works",
-        value="Each user becomes the 'developer' of their own project, giving full access without restrictions.",
+        name="🔒 Privacy & Security",
+        value="• OAuth authentication through Google\n• No passwords stored\n• Secure server infrastructure\n• Your data stays private",
         inline=False
     )
     
@@ -812,136 +805,75 @@ async def setup_guide(ctx):
 
 @bot.command(name='steps')
 async def detailed_steps(ctx):
-    """Show detailed setup steps"""
-    embeds = []
-    
-    # Step 1
-    embed1 = discord.Embed(
-        title="📋 Step 1: Create Google Cloud Project",
-        color=0x4285f4
-    )
-    embed1.add_field(
-        name="Instructions",
-        value="""1. Go to: https://console.cloud.google.com/
-2. Click 'Select a project' → 'New Project'
-3. Project name: `ActionInbox-YourName`
-4. Click 'Create' and wait
-5. Make sure your new project is selected""",
-        inline=False
-    )
-    embed1.add_field(
-        name="🔗 Direct Link",
-        value="[Create Project](https://console.cloud.google.com/projectcreate)",
-        inline=False
-    )
-    embeds.append(embed1)
-    
-    # Step 2
-    embed2 = discord.Embed(
-        title="📧 Step 2: Enable APIs",
-        color=0xea4335
-    )
-    embed2.add_field(
-        name="Instructions",
-        value="""1. In Google Cloud Console, go to 'APIs & Services' → 'Library'
-2. Search for 'Gmail API' and click 'Enable'
-3. Search for 'Calendar API' and click 'Enable'
-4. Wait for both APIs to be enabled""",
-        inline=False
-    )
-    embed2.add_field(
-        name="🔗 Direct Links",
-        value="[Gmail API](https://console.cloud.google.com/apis/library/gmail.googleapis.com)\n[Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com)",
-        inline=False
-    )
-    embeds.append(embed2)
-    
-    # Step 3
-    embed3 = discord.Embed(
-        title="🔑 Step 3: Create OAuth Credentials",
-        color=0xfbbc04
-    )
-    embed3.add_field(
-        name="Instructions",
-        value="""1. Go to 'APIs & Services' → 'Credentials'
-2. Click '+ CREATE CREDENTIALS' → 'OAuth client ID'
-3. If prompted, configure OAuth consent screen:
-   - User Type: External
-   - App name: ActionInbox
-   - Your email for support and developer contact
-4. Application type: 'Desktop application'
-5. Name: 'ActionInbox Desktop'
-6. Click 'Create'
-7. Download the JSON file
-8. Rename it to 'credentials.json'
-9. Keep it safe for the !setup command""",
-        inline=False
-    )
-    embed3.add_field(
-        name="🔗 Direct Link",
-        value="[Create Credentials](https://console.cloud.google.com/apis/credentials)",
-        inline=False
-    )
-    embeds.append(embed3)
-    
-    # Step 4
-    embed4 = discord.Embed(
-        title="🚀 Step 4: Use ActionInbox",
-        color=0x34a853
-    )
-    embed4.add_field(
-        name="Instructions",
-        value="""1. Use `!setup` command in Discord
-2. Follow the authentication flow
-3. Grant all requested permissions
-4. Use `!start` to begin monitoring
-5. Enjoy automated email processing!""",
-        inline=False
-    )
-    embed4.add_field(
-        name="🎉 You're Done!",
-        value="ActionInbox will now process your emails with AI and create calendar events automatically.",
-        inline=False
-    )
-    embeds.append(embed4)
-    
-    for embed in embeds:
-        await ctx.send(embed=embed)
-
-@bot.command(name='links')
-async def quick_links(ctx):
-    """Show quick setup links"""
+    """Show simple usage steps"""
     embed = discord.Embed(
-        title="🔗 Quick Setup Links",
-        description="Click these links to set up your Google Cloud project:",
+        title="🚀 How to Use ActionInbox",
+        description="Simple steps to get started:",
+        color=0x00ff00
+    )
+    
+    embed.add_field(
+        name="1️⃣ Connect Gmail",
+        value="Use `!setup` command and grant Gmail permissions",
+        inline=False
+    )
+    
+    embed.add_field(
+        name="2️⃣ Start Monitoring",
+        value="Use `!start` to begin email monitoring",
+        inline=False
+    )
+    
+    embed.add_field(
+        name="3️⃣ Get Notifications",
+        value="Receive real-time email alerts in Discord",
+        inline=False
+    )
+    
+    embed.add_field(
+        name="4️⃣ Calendar Events",
+        value="Meeting emails automatically create calendar events",
+        inline=False
+    )
+    
+    embed.add_field(
+        name="🎉 That's It!",
+        value="ActionInbox handles everything automatically",
+        inline=False
+    )
+    
+    await ctx.send(embed=embed)
+
+@bot.command(name='features')
+async def show_features(ctx):
+    """Show ActionInbox features"""
+    embed = discord.Embed(
+        title="✨ ActionInbox Features",
+        description="AI-powered email automation:",
         color=0x0099ff
     )
     
     embed.add_field(
-        name="1️⃣ Create Project",
-        value="[Google Cloud Console](https://console.cloud.google.com/projectcreate)",
+        name="🤖 AI Classification",
+        value="Automatically categorizes emails: Meeting, Task, Invoice, Spam",
         inline=False
     )
     
     embed.add_field(
-        name="2️⃣ Enable APIs",
-        value="[Gmail API](https://console.cloud.google.com/apis/library/gmail.googleapis.com)\n[Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com)",
+        name="📅 Calendar Integration",
+        value="Creates Google Calendar events from meeting emails",
         inline=False
     )
     
     embed.add_field(
-        name="3️⃣ Create Credentials",
-        value="[OAuth Credentials](https://console.cloud.google.com/apis/credentials)",
+        name="🔔 Real-time Alerts",
+        value="Instant Discord notifications for new emails",
         inline=False
     )
     
     embed.add_field(
-        name="📋 Remember",
-        value="""• Project name: `ActionInbox-YourName`
-• Enable both Gmail API and Calendar API
-• Credential type: Desktop application
-• Download as: `credentials.json`
-• Then use: `!setup` command""",
+        name="🔒 Secure Processing",
+        value="OAuth authentication, no passwords stored",
         inline=False
     )
     
@@ -958,7 +890,7 @@ async def commands_list(ctx):
     
     embed.add_field(
         name="🔧 Setup Commands",
-        value="`!guide` - Complete setup guide\n`!steps` - Detailed step-by-step\n`!links` - Quick setup links\n`!setup` - Connect Gmail account\n`!change` - Change Gmail account",
+        value="`!guide` - Service overview\n`!steps` - How to use\n`!features` - Feature list\n`!setup` - Connect Gmail account\n`!change` - Change Gmail account",
         inline=False
     )
     
@@ -970,7 +902,7 @@ async def commands_list(ctx):
     
     embed.add_field(
         name="🧪 Testing Commands",
-        value="`!test_calendar` - Test calendar\n`!fix_calendar` - Fix calendar permissions\n`!clear` - Clear processed emails",
+        value="`!test_calendar` - Test calendar\n`!fix_calendar` - Fix calendar permissions\n`!reset` - Reset authentication\n`!clear` - Clear processed emails",
         inline=False
     )
     
@@ -1089,27 +1021,14 @@ async def monitor_emails(channel):
                 calendar_result = create_calendar_event(email_data, analysis)
                 
                 if calendar_result and calendar_result.get('success'):
-                    embed.add_field(name="✅ Calendar Event Created", value=f"""
-**Time:** {calendar_result.get('start_time', 'Unknown')}
-**Duration:** {calendar_result.get('duration', 60)} minutes
-**Location:** {calendar_result.get('location', 'Not specified')}
-📧 Notification sent to organizer
-""", inline=False)
+                    embed.add_field(name="✅ Calendar Event Created", value=f"Time: {calendar_result.get('start_time', 'Unknown')[:19]}\nDuration: {calendar_result.get('duration', 60)} min", inline=False)
                 
                 elif calendar_result and calendar_result.get('error'):
                     error_msg = str(calendar_result['error'])
-                    if "unregistered callers" in error_msg or "API Key" in error_msg:
-                        embed.add_field(name="⚠️ Calendar Setup Needed", value=f"""
-📅 Meeting detected but Calendar API not enabled:
-**Solution:** Use `!guide` and enable Calendar API in your Google Cloud project
-**Quick Link:** [Enable Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com)
-""", inline=False)
+                    if "Calendar API has not been used" in error_msg or "unregistered callers" in error_msg:
+                        embed.add_field(name="⚠️ Calendar API Disabled", value="Calendar API not enabled. Contact admin.", inline=False)
                     else:
-                        embed.add_field(name="⚠️ Calendar Issue", value=f"""
-📅 Meeting detected but calendar event failed:
-**Error:** {error_msg}
-**Fix:** Use `!fix_calendar` for troubleshooting
-""", inline=False)
+                        embed.add_field(name="⚠️ Calendar Issue", value=f"Calendar failed: {error_msg[:100]}...", inline=False)
                 else:
                     embed.add_field(name="Type", value="📅 Meeting detected (calendar not available)", inline=True)
             elif classification == 'Task':
